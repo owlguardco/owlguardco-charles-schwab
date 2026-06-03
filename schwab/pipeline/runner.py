@@ -12,6 +12,7 @@ from loguru import logger
 from ..agents import ExecutionAgent, ResearchAgent, RiskAgent, SignalAgent
 from ..client import AccountsClient, MarketDataClient, OrdersClient
 from ..discord import DiscordNotifier
+from ..fincept.macro_context import get_macro_context
 from ..safety import KillSwitch, Mandate, OrderGuard
 
 
@@ -27,6 +28,9 @@ class TradingPipeline:
         self.orders = OrdersClient()
 
         self.research_agent = ResearchAgent(self.market_data)
+        # Reuse the research agent's (already-pinged) Fincept connection for
+        # the once-per-run macro context, so we don't open a second one.
+        self._fincept = self.research_agent._fincept
         self.signal_agent = SignalAgent()
         self.risk_agent = RiskAgent(self.market_data)
         self.execution_agent = ExecutionAgent()
@@ -59,7 +63,9 @@ class TradingPipeline:
 
         # 3-4. Research -> signals.
         research = self.research_agent.run(symbols)
-        signals = self.signal_agent.run(research)
+        # Once-per-run macro/geopolitical context from Fincept (empty if absent).
+        macro = get_macro_context(self._fincept)
+        signals = self.signal_agent.run(research, macro_context=macro)
         if not signals:
             logger.info("no signals")
             self.notifier.send("📊 Run complete", "No actionable signals.", color=0x808080)

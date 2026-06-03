@@ -1,46 +1,120 @@
-"""ResearchAgent — per-symbol intraday read from candles + quote, summarized by Claude."""
+"""
+ResearchAgent — enriches watchlist symbols with market data, news, technicals,
+and sentiment.
+
+Data sources (priority order):
+  1. FinceptTerminal MCP bridge (richer: live news, technicals, sentiment, geo)
+  2. Schwab MarketDataClient (fallback when Fincept is not running)
+
+Degrades gracefully: every Fincept call is wrapped, and Fincept availability
+never breaks the run. The LLM call routes through the shared _llm helper so the
+model stays env-configurable (ANTHROPIC_MODEL), consistent with the rest of the
+system.
+"""
 
 from __future__ import annotations
+
+import json
 
 from loguru import logger
 
 from ..client import MarketDataClient
+from ..fincept.client import FinceptMCPClient, FinceptMCPError
+from ..fincept.config import FinceptConfig
 from ._llm import ask_claude
 
 SYSTEM = (
-    "You are an intraday equity research assistant for a single retail trader. "
-    "Given recent 5-minute candles and the current quote for ONE US-listed stock, "
-    "summarize price action, volume trend, and whether there is a plausible "
-    "same-day intraday setup worth investigating. Be concise (4-6 sentences). "
-    "Do not give financial advice or guarantees; describe what the data shows. "
-    "If the data is thin or missing, say so plainly."
+    "You are an intraday equity research analyst for a single retail trader. "
+    "Describe what the data shows; do not give advice or guarantees. If data is "
+    "thin or missing, say so plainly. Never invent figures."
 )
 
 
 class ResearchAgent:
-    def __init__(self, market_data: MarketDataClient | None = None):
-        self.md = market_data or MarketDataClient()
+    def __init__(self, market_data_client: MarketDataClient | None = None):
+        self.mdc = market_data_client or MarketDataClient()
+        self._fincept: FinceptMCPClient | None = self._try_connect_fincept()
+
+    def _try_connect_fincept(self) -> FinceptMCPClient | None:
+        cfg = FinceptConfig()
+        if not cfg.is_configured():
+            logger.info("ResearchAgent: Fincept not configured — using Schwab data only")
+            return None
+        try:
+            client = FinceptMCPClient(FinceptConfig.from_env())
+            if client.ping():
+                logger.info("ResearchAgent: Fincept MCP bridge connected")
+                return client
+            logger.warning("ResearchAgent: Fincept configured but unreachable — Schwab only")
+            return None
+        except Exception as e:  # noqa: BLE001 — Fincept must never break startup
+            logger.warning("ResearchAgent: Fincept init failed ({}) — Schwab only", e)
+            return None
 
     def run(self, symbols: list[str]) -> dict:
-        out: dict[str, str] = {}
+        results: dict[str, str] = {}
         for symbol in symbols:
             symbol = symbol.upper()
             try:
-                candles = self.md.get_candles(symbol, period_type="day", period=1,
-                                              frequency_type="minute", frequency=5)
-                quote = self.md.get_quote(symbol)
+                ctx = self._gather_context(symbol)
+                results[symbol] = self._summarize(symbol, ctx)
             except Exception as e:  # noqa: BLE001
-                logger.warning("research data fetch failed for {}: {}", symbol, e)
-                out[symbol] = f"data unavailable ({e})"
-                continue
-            recent = candles[-40:] if candles else []
-            user = (
-                f"Symbol: {symbol}\n"
-                f"Current quote: {quote}\n"
-                f"Recent 5-min candles (last {len(recent)}): {recent}\n\n"
-                "Summarize the intraday picture and whether there is a setup worth a closer look."
-            )
-            summary = ask_claude(SYSTEM, user) or "no research produced"
-            out[symbol] = summary
-            logger.info("research: {} -> {} chars", symbol, len(summary))
-        return out
+                logger.error("ResearchAgent: error on {}: {}", symbol, e)
+                results[symbol] = f"Research failed: {e}"
+        return results
+
+    def _gather_context(self, symbol: str) -> dict:
+        ctx = {"symbol": symbol, "source": "schwab"}
+        if self._fincept:
+            ctx["source"] = "fincept"
+            try:
+                ctx["quote"] = self._fincept.get_quote(symbol)
+            except FinceptMCPError as e:
+                logger.warning("Fincept get_quote failed for {}: {}", symbol, e)
+                ctx["quote"] = self._schwab_quote_fallback(symbol)
+            try:
+                ctx["history"] = self._fincept.get_history(symbol, interval="5m", period="1d")
+            except FinceptMCPError as e:
+                logger.warning("Fincept get_history failed for {}: {}", symbol, e)
+                ctx["history"] = self._schwab_history_fallback(symbol)
+            for key, fn in (
+                ("technicals", self._fincept.get_equity_technicals),
+                ("sentiment", self._fincept.get_equity_sentiment),
+            ):
+                try:
+                    ctx[key] = fn(symbol)
+                except FinceptMCPError as e:
+                    logger.warning("Fincept {} failed for {}: {}", key, symbol, e)
+            try:
+                ctx["news"] = self._fincept.get_news(symbol=symbol, limit=5)
+            except FinceptMCPError as e:
+                logger.warning("Fincept news failed for {}: {}", symbol, e)
+        else:
+            ctx["quote"] = self._schwab_quote_fallback(symbol)
+            ctx["history"] = self._schwab_history_fallback(symbol)
+        return ctx
+
+    def _schwab_quote_fallback(self, symbol: str) -> dict:
+        try:
+            return self.mdc.get_quote(symbol)
+        except Exception as e:  # noqa: BLE001
+            return {"error": str(e)}
+
+    def _schwab_history_fallback(self, symbol: str) -> dict:
+        try:
+            bars = self.mdc.get_candles(symbol)
+            return {"candles": bars[-20:] if len(bars) > 20 else bars}
+        except Exception as e:  # noqa: BLE001
+            return {"error": str(e)}
+
+    def _summarize(self, symbol: str, ctx: dict) -> str:
+        user = (
+            f"Analyze this data for {symbol} and return, concisely (max ~150 words):\n"
+            "1. Price action summary (trend, key levels, notable moves)\n"
+            "2. Volume / momentum signals\n"
+            "3. News sentiment (if available)\n"
+            "4. Technical read (bullish / bearish / neutral)\n"
+            "5. Is there an intraday swing setup worth investigating? (yes/no + one sentence)\n\n"
+            f"Data:\n{json.dumps(ctx, indent=2, default=str)[:6000]}"
+        )
+        return ask_claude(SYSTEM, user) or "no research produced"

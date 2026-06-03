@@ -20,11 +20,17 @@ MIN_CONFIDENCE = 6
 
 
 class SignalAgent:
-    def run(self, research: dict) -> list[dict]:
+    def run(self, research: dict, macro_context: str = "") -> list[dict]:
         if not research:
             return []
         body = "\n\n".join(f"### {sym}\n{summary}" for sym, summary in research.items())
-        raw = ask_claude(SYSTEM, f"Research summaries:\n\n{body}")
+        prompt = f"Research summaries:\n\n{body}"
+        if macro_context:
+            prompt += (
+                "\n\nMACRO/GEOPOLITICAL CONTEXT (factor this into signal "
+                f"confidence):\n{macro_context}"
+            )
+        raw = ask_claude(SYSTEM, prompt)
         parsed = extract_json(raw)
         if not isinstance(parsed, list):
             logger.warning("signal agent returned non-list; no signals")

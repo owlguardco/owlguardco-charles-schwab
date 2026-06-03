@@ -77,6 +77,27 @@ python scripts/run_pipeline.py            # uses MANDATE_SYMBOL_ALLOWLIST
 - Every order MUST pass `order_guard.pre_flight()`. No exceptions.
 - The kill-switch check is the first thing `run()` does. Always.
 
+## Fincept Terminal Integration
+
+The ResearchAgent optionally connects to FinceptTerminal's local MCP bridge for
+richer data (technicals, sentiment, live news, geopolitics). It degrades
+gracefully: if Fincept is not running/configured, it falls back to Schwab API
+data (quotes + candles only), and the SignalAgent simply gets no macro context.
+
+After each FinceptTerminal launch the bridge port + token change. Run:
+```
+python scripts/fincept_discover.py
+```
+This updates `FINCEPT_MCP_ENDPOINT` and `FINCEPT_MCP_TOKEN` in `.env`. Find the
+values in Fincept under **Settings -> Developer -> MCP Bridge**.
+
+Tools used: `get_quote`, `get_history`, `get_equity_technicals`,
+`get_equity_sentiment`, `get_news`, `search_news`, `get_threat_alerts`,
+`fetch_geopolitics_events`, `datahub_peek`. Every Fincept call is wrapped in
+`try/except FinceptMCPError` — Fincept availability never breaks the pipeline.
+The bridge uses `Connection: close` on every request (per TerminalMcpBridge.h),
+and the port/token are never hardcoded.
+
 ## Critical data boundary
 
 No employer / Wolters Kluwer / work data EVER enters this system. It uses only
