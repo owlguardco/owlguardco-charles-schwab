@@ -1,0 +1,25 @@
+# Secrets / env
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Top-level runtime data + logs
+/data/
+/logs/
+*.db
+*.sqlite
+
+# Runtime-mutable state inside the package (created on first run by the code,
+# never committed — committing them would churn and could ship a stale or
+# accidentally-active kill switch / real trade journal).
+schwab/data/kill_switch_state.json
+schwab/data/trade_log.csv
+
+# OS / editor
+.DS_Store

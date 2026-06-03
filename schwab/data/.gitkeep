@@ -1,0 +1,2 @@
+# Runtime state (kill_switch_state.json, trade_log.csv) is created here at
+# runtime and gitignored. This file keeps the directory in version control.
