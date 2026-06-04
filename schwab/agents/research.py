@@ -34,6 +34,7 @@ class ResearchAgent:
     def __init__(self, market_data_client: MarketDataClient | None = None):
         self.mdc = market_data_client or MarketDataClient()
         self._fincept: FinceptMCPClient | None = self._try_connect_fincept()
+        self._uw: "UnusualWhalesClient | None" = self._try_connect_uw()
 
     def _try_connect_fincept(self) -> FinceptMCPClient | None:
         cfg = FinceptConfig()
@@ -49,6 +50,23 @@ class ResearchAgent:
             return None
         except Exception as e:  # noqa: BLE001 — Fincept must never break startup
             logger.warning("ResearchAgent: Fincept init failed ({}) — Schwab only", e)
+            return None
+
+    def _try_connect_uw(self) -> "UnusualWhalesClient | None":
+        from schwab.unusual_whales.client import UnusualWhalesClient, UnusualWhalesError
+        import os
+        if not os.environ.get("UW_API_KEY"):
+            logger.info("ResearchAgent: UW_API_KEY not set — skipping options flow")
+            return None
+        try:
+            client = UnusualWhalesClient()
+            if client.ping():
+                logger.info("ResearchAgent: Unusual Whales connected")
+                return client
+            logger.warning("ResearchAgent: UW ping failed — skipping options flow")
+            return None
+        except Exception as e:
+            logger.warning(f"ResearchAgent: UW init failed ({e})")
             return None
 
     def run(self, symbols: list[str]) -> dict:
@@ -92,6 +110,12 @@ class ResearchAgent:
         else:
             ctx["quote"] = self._schwab_quote_fallback(symbol)
             ctx["history"] = self._schwab_history_fallback(symbol)
+
+        # Options flow (Unusual Whales)
+        if self._uw:
+            from schwab.unusual_whales.flow_context import get_flow_context
+            flow = get_flow_context(self._uw, [symbol])
+            ctx["options_flow"] = flow.get(symbol, "")
         return ctx
 
     def _schwab_quote_fallback(self, symbol: str) -> dict:

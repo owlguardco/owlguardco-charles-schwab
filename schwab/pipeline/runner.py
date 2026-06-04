@@ -31,6 +31,9 @@ class TradingPipeline:
         # Reuse the research agent's (already-pinged) Fincept connection for
         # the once-per-run macro context, so we don't open a second one.
         self._fincept = self.research_agent._fincept
+        # Reuse the research agent's (already-pinged) Unusual Whales connection
+        # for the once-per-run market flow summary.
+        self._uw = self.research_agent._uw
         self.signal_agent = SignalAgent()
         self.risk_agent = RiskAgent(self.market_data)
         self.execution_agent = ExecutionAgent()
@@ -65,6 +68,10 @@ class TradingPipeline:
         research = self.research_agent.run(symbols)
         # Once-per-run macro/geopolitical context from Fincept (empty if absent).
         macro = get_macro_context(self._fincept)
+        from ..unusual_whales.flow_context import get_market_flow_summary
+        market_flow = get_market_flow_summary(self._uw)
+        if market_flow:
+            macro = (macro + "\n\n" + market_flow).strip()
         signals = self.signal_agent.run(research, macro_context=macro)
         if not signals:
             logger.info("no signals")

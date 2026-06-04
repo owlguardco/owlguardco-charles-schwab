@@ -98,6 +98,32 @@ Tools used: `get_quote`, `get_history`, `get_equity_technicals`,
 The bridge uses `Connection: close` on every request (per TerminalMcpBridge.h),
 and the port/token are never hardcoded.
 
+## Three-Module Wizard Upgrade
+
+### Screener (schwab/screener/)
+Pre-market momentum scanner via finvizfinance (no API key needed).
+  python scripts/scan.py            # prints ticker list
+  python scripts/scan.py --detail   # full table
+  python scripts/scan.py --run      # scan + run pipeline immediately
+
+### Options Flow (schwab/unusual_whales/)
+Unusual Whales REST client — options flow, dark pool, market tide.
+Requires UW_API_KEY in .env (unusualwhales.com/settings/api-dashboard).
+  python scripts/flow.py                   # market-wide flow
+  python scripts/flow.py --ticker AAPL     # symbol flow
+  python scripts/flow.py --darkpool        # dark pool prints
+
+### Backtesting (schwab/backtest/)
+Signal validation on historical Schwab 5-min bars via vectorbt engine.
+  python scripts/backtest.py --symbols AAPL TSLA --days 30
+  python scripts/backtest.py --symbols NVDA --signal orb --days 10
+  Signals: momentum (default), vwap, orb
+
+### Integrated workflow
+  python scripts/scan.py --run     # scan → pipeline (research+signal+risk+execute)
+  python scripts/flow.py           # check smart money before running pipeline
+  python scripts/backtest.py --symbols $(python scripts/scan.py) --days 30
+
 ## Critical data boundary
 
 No employer / Wolters Kluwer / work data EVER enters this system. It uses only
