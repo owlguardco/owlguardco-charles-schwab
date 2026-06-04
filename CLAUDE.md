@@ -124,6 +124,23 @@ Signal validation on historical Schwab 5-min bars via vectorbt engine.
   python scripts/flow.py           # check smart money before running pipeline
   python scripts/backtest.py --symbols $(python scripts/scan.py) --days 30
 
+## Dashboard
+
+Live web dashboard at http://localhost:8000.
+
+Start:
+  python scripts/dashboard.py
+
+Structure:
+  dashboard/state.py    — reads kill_switch_state.json, trade_log.csv, .env, Schwab/UW clients
+  dashboard/server.py   — Flask app, SSE push, pipeline trigger endpoint
+  dashboard/static/     — single index.html (vanilla JS, IBM Plex Mono/Sans)
+
+The dashboard is read-only except for kill switch toggle.
+Pipeline runs fire in a background thread and push status via SSE.
+Refreshes live data every 10 seconds via SSE broadcast from poll loop.
+UW flow and Schwab account populate automatically when keys are configured.
+
 ## Critical data boundary
 
 No employer / Wolters Kluwer / work data EVER enters this system. It uses only

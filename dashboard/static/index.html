@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OwlGuardCo — Schwab Trading</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg1: #111111;
+    --bg2: #1a1a1a;
+    --bg3: #222222;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e8e8e8;
+    --text2: #888;
+    --text3: #555;
+    --green: #4ade80;
+    --green-dim: rgba(74,222,128,0.12);
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,0.12);
+    --amber: #fbbf24;
+    --amber-dim: rgba(251,191,36,0.12);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96,165,250,0.10);
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 13px; min-height: 100vh; }
+
+  .topbar { display: flex; align-items: center; gap: 16px; padding: 12px 20px; border-bottom: 0.5px solid var(--border); background: var(--bg1); }
+  .topbar-logo { font-size: 12px; font-weight: 500; letter-spacing: 0.1em; color: var(--text2); text-transform: uppercase; }
+  .topbar-title { font-size: 13px; color: var(--text); }
+  .topbar-time { margin-left: auto; font-size: 11px; color: var(--text3); }
+  .ks-pill { padding: 3px 10px; border-radius: 3px; font-size: 11px; font-weight: 500; letter-spacing: 0.05em; cursor: pointer; border: none; font-family: var(--mono); }
+  .ks-inactive { background: var(--green-dim); color: var(--green); }
+  .ks-active { background: var(--red-dim); color: var(--red); animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+  .conn-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .conn-dot.live { background: var(--green); box-shadow: 0 0 4px var(--green); }
+  .conn-dot.dead { background: var(--red); }
+  .conn-dot.connecting { background: var(--amber); animation: pulse 1s infinite; }
+
+  .layout { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 41px); }
+
+  .sidebar { border-right: 0.5px solid var(--border); background: var(--bg1); padding: 16px 12px; display: flex; flex-direction: column; gap: 20px; }
+  .sidebar-section { display: flex; flex-direction: column; gap: 6px; }
+  .sidebar-label { font-size: 10px; letter-spacing: 0.12em; color: var(--text3); text-transform: uppercase; padding: 0 4px; margin-bottom: 2px; }
+  .sidebar-btn { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 4px; font-size: 12px; color: var(--text2); background: transparent; border: none; cursor: pointer; font-family: var(--mono); text-align: left; transition: background 0.12s, color 0.12s; width: 100%; }
+  .sidebar-btn:hover { background: var(--bg3); color: var(--text); }
+  .sidebar-btn.danger { color: var(--red); }
+  .sidebar-btn.danger:hover { background: var(--red-dim); }
+  .sidebar-btn .icon { font-size: 14px; opacity: 0.7; }
+
+  .module-row { display: flex; align-items: center; gap: 7px; padding: 5px 4px; font-size: 11px; color: var(--text2); }
+  .module-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .module-dot.ready { background: var(--green); }
+  .module-dot.missing { background: var(--text3); }
+
+  .main { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .metric { background: var(--bg1); border: 0.5px solid var(--border); border-radius: 6px; padding: 12px 14px; }
+  .metric-label { font-size: 10px; letter-spacing: 0.08em; color: var(--text3); text-transform: uppercase; margin-bottom: 5px; }
+  .metric-value { font-size: 20px; font-weight: 500; color: var(--text); line-height: 1.1; }
+  .metric-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+  .panel { background: var(--bg1); border: 0.5px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .panel-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 0.5px solid var(--border); font-size: 10px; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase; }
+  .panel-head .badge { margin-left: auto; background: var(--bg3); color: var(--text3); font-size: 10px; padding: 1px 6px; border-radius: 3px; }
+  .panel-body { padding: 12px 14px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { font-size: 10px; letter-spacing: 0.06em; color: var(--text3); text-transform: uppercase; text-align: left; padding: 0 0 8px; border-bottom: 0.5px solid var(--border); font-weight: 400; }
+  td { padding: 7px 0; border-bottom: 0.5px solid var(--border); color: var(--text); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  td.right { text-align: right; }
+  td.muted { color: var(--text2); font-size: 11px; }
+  .sym { font-weight: 500; }
+  .pos { color: var(--green); }
+  .neg { color: var(--red); }
+  .tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 500; }
+  .tag-green { background: var(--green-dim); color: var(--green); }
+  .tag-red { background: var(--red-dim); color: var(--red); }
+  .tag-amber { background: var(--amber-dim); color: var(--amber); }
+  .tag-blue { background: var(--blue-dim); color: var(--blue); }
+  .tag-gray { background: var(--bg3); color: var(--text2); }
+
+  .empty-state { color: var(--text3); font-size: 12px; padding: 20px 0; text-align: center; }
+
+  .flow-bar-wrap { height: 3px; background: var(--bg3); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+  .flow-bar { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+
+  #pipeline-status-bar { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text2); padding: 8px 14px; border-bottom: 0.5px solid var(--border); }
+  #pipeline-status-bar.running { color: var(--amber); background: var(--amber-dim); }
+  #pipeline-status-bar.error { color: var(--red); background: var(--red-dim); }
+  #pipeline-status-bar.complete { color: var(--green); }
+
+  .scan-input { display: flex; gap: 8px; margin-bottom: 10px; }
+  .scan-input input { flex: 1; background: var(--bg2); border: 0.5px solid var(--border2); border-radius: 4px; color: var(--text); font-family: var(--mono); font-size: 12px; padding: 6px 10px; outline: none; }
+  .scan-input input:focus { border-color: var(--blue); }
+  .scan-input button { background: var(--bg3); border: 0.5px solid var(--border2); border-radius: 4px; color: var(--text2); font-family: var(--mono); font-size: 12px; padding: 6px 12px; cursor: pointer; }
+  .scan-input button:hover { color: var(--text); background: var(--bg2); }
+  .scan-input button.primary { color: var(--green); border-color: rgba(74,222,128,0.3); }
+  .scan-input button.primary:hover { background: var(--green-dim); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-logo">OwlGuardCo</span>
+  <span style="color:var(--border2)">›</span>
+  <span class="topbar-title">Schwab Trading Dashboard</span>
+  <div style="display:flex;align-items:center;gap:6px;margin-left:16px;">
+    <div class="conn-dot connecting" id="conn-dot"></div>
+    <span style="font-size:11px;color:var(--text3);" id="conn-label">connecting...</span>
+  </div>
+  <button class="ks-pill ks-inactive" id="ks-pill" onclick="toggleKillSwitch()">● SAFE</button>
+  <span class="topbar-time" id="server-time">—</span>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Pipeline</div>
+      <button class="sidebar-btn" onclick="runPipeline('scan')">▶ Scan + run</button>
+      <button class="sidebar-btn" onclick="runPipeline('manual')">▶ Manual symbols</button>
+      <button class="sidebar-btn" onclick="refreshFlow()">⟳ Refresh UW flow</button>
+      <button class="sidebar-btn" onclick="refreshSnapshot()">⟳ Refresh all</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Safety</div>
+      <button class="sidebar-btn danger" onclick="toggleKillSwitch()">⏹ Toggle kill switch</button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Modules</div>
+      <div id="module-status-list">
+        <div class="module-row"><div class="module-dot missing"></div>loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div id="pipeline-status-bar" style="display:none;">
+      <span id="pipeline-status-text">idle</span>
+    </div>
+
+    <div class="metrics">
+      <div class="metric" id="metric-ks">
+        <div class="metric-label">Kill switch</div>
+        <div class="metric-value" id="metric-ks-val" style="font-size:15px;color:var(--green)">INACTIVE</div>
+        <div class="metric-sub" id="metric-ks-sub">Safe to trade</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Account value</div>
+        <div class="metric-value" id="metric-acct">$—</div>
+        <div class="metric-sub" id="metric-acct-sub">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Trades today</div>
+        <div class="metric-value" id="metric-trades">0</div>
+        <div class="metric-sub" id="metric-trades-sub">0 submitted</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Max position</div>
+        <div class="metric-value" id="metric-mandate">$—</div>
+        <div class="metric-sub" id="metric-mandate-sub">Daily loss limit $—</div>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="panel">
+        <div class="panel-head">Watchlist <span class="badge" id="watchlist-badge">0</span></div>
+        <div class="panel-body">
+          <div class="scan-input">
+            <input type="text" id="symbol-input" placeholder="AAPL TSLA NVDA..." />
+            <button onclick="runManualScan()" class="primary">▶ Run</button>
+          </div>
+          <table>
+            <thead><tr><th>Symbol</th><th>Allowlisted</th><th>Action</th></tr></thead>
+            <tbody id="watchlist-body"><tr><td colspan="3" class="empty-state">Enter symbols above</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">Market tide <span class="badge" id="tide-badge">UW</span></div>
+        <div class="panel-body" id="tide-body">
+          <div class="empty-state">UW_API_KEY required</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">Options flow <span class="badge" id="flow-badge">0 alerts</span></div>
+      <div class="panel-body">
+        <table>
+          <thead><tr><th>Ticker</th><th>Type</th><th>Premium</th><th>DTE</th><th>Strike</th><th>Expiry</th><th class="right">Sentiment</th></tr></thead>
+          <tbody id="flow-body"><tr><td colspan="7" class="empty-state">UW_API_KEY required for live flow</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="panel">
+        <div class="panel-head">Open positions <span class="badge" id="pos-badge">0</span></div>
+        <div class="panel-body">
+          <table>
+            <thead><tr><th>Symbol</th><th>Qty</th><th>Avg cost</th><th class="right">Mkt value</th></tr></thead>
+            <tbody id="positions-body"><tr><td colspan="4" class="empty-state">Schwab auth required</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">Top OI change <span class="badge">today</span></div>
+        <div class="panel-body" id="oi-body">
+          <div class="empty-state">UW_API_KEY required</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">Trade log <span class="badge" id="log-badge">0 trades</span></div>
+      <div class="panel-body">
+        <table>
+          <thead><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Cost</th><th>Conf</th><th class="right">Result</th></tr></thead>
+          <tbody id="log-body"><tr><td colspan="8" class="empty-state">No trades logged today</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let _snap = {};
+let _sse = null;
+
+function fmt(v, prefix='$') {
+  if (v == null || v === '' || v === undefined) return '—';
+  const n = parseFloat(v);
+  if (isNaN(n)) return v;
+  return prefix + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function fmtTime(iso) {
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+  catch { return iso.slice(11,19); }
+}
+
+function applySnapshot(snap) {
+  _snap = snap;
+  const ks = snap.kill_switch || {};
+  const mandate = snap.mandate || {};
+  const pnl = snap.pnl_today || {};
+  const account = snap.account || {};
+  const uw = snap.uw || {};
+
+  // Topbar time
+  if (snap.server_time) {
+    document.getElementById('server-time').textContent = fmtTime(snap.server_time) + ' UTC';
+  }
+
+  // Kill switch
+  const ksActive = !!ks.active;
+  const ksPill = document.getElementById('ks-pill');
+  ksPill.textContent = ksActive ? '● HALT' : '● SAFE';
+  ksPill.className = 'ks-pill ' + (ksActive ? 'ks-active' : 'ks-inactive');
+  const ksVal = document.getElementById('metric-ks-val');
+  ksVal.textContent = ksActive ? 'ACTIVE' : 'INACTIVE';
+  ksVal.style.color = ksActive ? 'var(--red)' : 'var(--green)';
+  document.getElementById('metric-ks-sub').textContent = ks.reason || (ksActive ? 'Trading halted' : 'Safe to trade');
+  const metricKs = document.getElementById('metric-ks');
+  metricKs.style.borderLeftColor = ksActive ? 'var(--red)' : 'var(--green)';
+  metricKs.style.borderLeftWidth = '2px';
+
+  // Account
+  if (account.account_value != null) {
+    document.getElementById('metric-acct').textContent = fmt(account.account_value);
+    document.getElementById('metric-acct-sub').textContent = (account.positions || []).length + ' positions';
+  } else if (account.error) {
+    document.getElementById('metric-acct').textContent = '—';
+    document.getElementById('metric-acct-sub').textContent = 'auth error';
+  }
+
+  // Trades today
+  document.getElementById('metric-trades').textContent = pnl.trade_count || 0;
+  document.getElementById('metric-trades-sub').textContent = (pnl.trade_count || 0) + ' submitted today';
+
+  // Mandate
+  document.getElementById('metric-mandate').textContent = mandate.max_position_usd ? '$' + mandate.max_position_usd.toLocaleString() : '—';
+  document.getElementById('metric-mandate-sub').textContent = mandate.daily_loss_limit_usd ? 'Daily loss limit $' + mandate.daily_loss_limit_usd.toLocaleString() : 'not configured';
+
+  // Module status
+  renderModuleStatus(snap.module_status || {});
+
+  // Positions
+  renderPositions(account.positions || []);
+
+  // Trade log
+  renderTradeLog(snap.trade_log || []);
+
+  // UW data
+  if (uw.market_tide) renderTide(uw.market_tide);
+  if (uw.flow_alerts) renderFlow(uw.flow_alerts);
+  if (uw.oi_change) renderOI(uw.oi_change);
+}
+
+function renderModuleStatus(status) {
+  const el = document.getElementById('module-status-list');
+  const labels = {schwab:'Schwab API', fincept:'Fincept MCP', unusual_whales:'Unusual Whales', anthropic:'Anthropic', screener:'Screener', backtest:'Backtest'};
+  el.innerHTML = Object.entries(labels).map(([k,label]) => {
+    const s = status[k] || 'missing';
+    const cls = s === 'ready' ? 'ready' : 'missing';
+    const color = s === 'ready' ? 'var(--green)' : 'var(--text3)';
+    return `<div class="module-row"><div class="module-dot ${cls}"></div><span style="color:${color}">${label}</span></div>`;
+  }).join('');
+}
+
+function renderPositions(positions) {
+  const tbody = document.getElementById('positions-body');
+  document.getElementById('pos-badge').textContent = positions.length;
+  if (!positions.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No open positions</td></tr>';
+    return;
+  }
+  tbody.innerHTML = positions.map(p => {
+    const sym = p.instrument?.symbol || p.symbol || '?';
+    const qty = p.longQuantity || p.shortQuantity || 0;
+    const avg = p.averagePrice || p.averageLongPrice || 0;
+    const mkt = p.marketValue || 0;
+    return `<tr>
+      <td class="sym">${sym}</td>
+      <td>${qty}</td>
+      <td class="muted">${fmt(avg)}</td>
+      <td class="right">${fmt(mkt)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderTradeLog(trades) {
+  const tbody = document.getElementById('log-body');
+  document.getElementById('log-badge').textContent = trades.length + ' trades';
+  if (!trades.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No trades logged</td></tr>';
+    return;
+  }
+  tbody.innerHTML = trades.slice(0, 20).map(t => {
+    const res = t.result || '';
+    const cls = res === 'submitted' ? 'tag-green' : res === 'blocked' ? 'tag-amber' : 'tag-red';
+    return `<tr>
+      <td class="muted">${fmtTime(t.timestamp)}</td>
+      <td class="sym">${t.symbol || '—'}</td>
+      <td>${t.side || '—'}</td>
+      <td>${t.qty || '—'}</td>
+      <td class="muted">${t.price ? fmt(t.price) : '—'}</td>
+      <td class="muted">${t.estimated_cost ? fmt(t.estimated_cost) : '—'}</td>
+      <td class="muted">${t.confidence || '—'}</td>
+      <td class="right"><span class="tag ${cls}">${res}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderFlow(alerts) {
+  const tbody = document.getElementById('flow-body');
+  document.getElementById('flow-badge').textContent = alerts.length + ' alerts';
+  if (!alerts.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No flow alerts</td></tr>';
+    return;
+  }
+  tbody.innerHTML = alerts.slice(0, 15).map(a => {
+    const bullish = (a.sentiment || '').toLowerCase().includes('bull') || a.put_call === 'CALL';
+    const cls = bullish ? 'tag-green' : 'tag-red';
+    const label = bullish ? 'Bullish' : 'Bearish';
+    const prem = a.premium ? '$' + (a.premium/1000).toFixed(0) + 'K' : '—';
+    return `<tr>
+      <td class="sym">${a.ticker_symbol || a.ticker || '—'}</td>
+      <td class="muted">${(a.put_call||'?')} ${a.is_sweep ? 'sweep' : 'block'}</td>
+      <td>${prem}</td>
+      <td class="muted">${a.dte != null ? a.dte+'d' : '—'}</td>
+      <td class="muted">${a.strike || '—'}</td>
+      <td class="muted">${a.expiry ? a.expiry.slice(5) : '—'}</td>
+      <td class="right"><span class="tag ${cls}">${label}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderTide(tide) {
+  const el = document.getElementById('tide-body');
+  if (!tide || tide.error) { el.innerHTML = '<div class="empty-state">No tide data</div>'; return; }
+  const call_net = tide.net_call_premium || tide.calls_net || 0;
+  const put_net = tide.net_put_premium || tide.puts_net || 0;
+  const total = Math.abs(call_net) + Math.abs(put_net) || 1;
+  const call_pct = Math.round(Math.abs(call_net) / total * 100);
+  const put_pct = Math.round(Math.abs(put_net) / total * 100);
+  document.getElementById('tide-badge').textContent = call_net > put_net ? 'BULLISH' : 'BEARISH';
+  el.innerHTML = `
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="color:var(--text2);font-size:11px;">Calls net</span>
+        <span style="color:var(--green);font-size:12px;font-weight:500;">${fmt(call_net)}</span>
+      </div>
+      <div class="flow-bar-wrap"><div class="flow-bar" style="width:${call_pct}%;background:var(--green);"></div></div>
+    </div>
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="color:var(--text2);font-size:11px;">Puts net</span>
+        <span style="color:var(--red);font-size:12px;font-weight:500;">${fmt(put_net)}</span>
+      </div>
+      <div class="flow-bar-wrap"><div class="flow-bar" style="width:${put_pct}%;background:var(--red);"></div></div>
+    </div>`;
+}
+
+function renderOI(oi) {
+  const el = document.getElementById('oi-body');
+  if (!oi || !oi.length) { el.innerHTML = '<div class="empty-state">No OI data</div>'; return; }
+  el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
+    oi.slice(0,10).map(item => {
+      const sym = item.ticker || item.symbol || '?';
+      const chg = item.total_oi_change_perc || item.oi_change_pct || 0;
+      const cls = chg >= 0 ? 'tag-green' : 'tag-red';
+      return `<span class="tag ${cls}">${sym} ${chg >= 0 ? '+' : ''}${Math.round(chg)}%</span>`;
+    }).join('') + '</div>';
+}
+
+function renderWatchlist(symbols, allowlist) {
+  const tbody = document.getElementById('watchlist-body');
+  document.getElementById('watchlist-badge').textContent = symbols.length;
+  if (!symbols.length) {
+    tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Enter symbols above</td></tr>';
+    return;
+  }
+  tbody.innerHTML = symbols.map(sym => {
+    const ok = allowlist.includes(sym.toUpperCase());
+    return `<tr>
+      <td class="sym">${sym}</td>
+      <td><span class="tag ${ok ? 'tag-green' : 'tag-amber'}">${ok ? 'yes' : 'not in mandate'}</span></td>
+      <td><span style="cursor:pointer;color:var(--blue);font-size:11px;" onclick="runSingleSymbol('${sym}')">▶ run</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Actions ─────────────────────────────────────────────────────────────────
+
+async function toggleKillSwitch() {
+  const ks = _snap.kill_switch || {};
+  const newActive = !ks.active;
+  const reason = newActive ? prompt('Kill switch reason:', 'manual dashboard halt') || 'manual dashboard halt' : '';
+  if (newActive && reason === null) return;
+  const res = await fetch('/api/kill-switch', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({active: newActive, reason})
+  });
+  const data = await res.json();
+  _snap.kill_switch = data;
+  applySnapshot(_snap);
+}
+
+async function refreshSnapshot() {
+  const res = await fetch('/api/snapshot');
+  applySnapshot(await res.json());
+}
+
+async function refreshFlow() {
+  const res = await fetch('/api/uw/flow');
+  const data = await res.json();
+  if (data.flow_alerts) renderFlow(data.flow_alerts);
+  if (data.market_tide) renderTide(data.market_tide);
+  if (data.oi_change) renderOI(data.oi_change);
+}
+
+async function runManualScan() {
+  const raw = document.getElementById('symbol-input').value.trim().toUpperCase();
+  if (!raw) return;
+  const symbols = raw.split(/[\s,]+/).filter(Boolean);
+  const allowlist = (_snap.mandate || {}).symbol_allowlist || [];
+  renderWatchlist(symbols, allowlist);
+  await runPipelineSymbols(symbols);
+}
+
+async function runSingleSymbol(sym) {
+  await runPipelineSymbols([sym]);
+}
+
+async function runPipeline(mode) {
+  if (mode === 'manual') {
+    document.getElementById('symbol-input').focus();
+    return;
+  }
+  const allowlist = (_snap.mandate || {}).symbol_allowlist || [];
+  if (!allowlist.length) { alert('MANDATE_SYMBOL_ALLOWLIST not configured in .env'); return; }
+  renderWatchlist(allowlist, allowlist);
+  await runPipelineSymbols(allowlist);
+}
+
+async function runPipelineSymbols(symbols) {
+  const ks = (_snap.kill_switch || {});
+  if (ks.active) { alert('Kill switch is active — deactivate before running pipeline'); return; }
+  const bar = document.getElementById('pipeline-status-bar');
+  bar.style.display = 'flex';
+  bar.className = 'running';
+  document.getElementById('pipeline-status-text').textContent = `▶ Running pipeline on ${symbols.join(', ')}...`;
+  const res = await fetch('/api/pipeline/run', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({symbols})
+  });
+  const data = await res.json();
+  if (data.error) {
+    bar.className = 'error';
+    document.getElementById('pipeline-status-text').textContent = '✗ ' + data.error;
+  }
+}
+
+// ── SSE connection ───────────────────────────────────────────────────────────
+
+function connectSSE() {
+  const dot = document.getElementById('conn-dot');
+  const label = document.getElementById('conn-label');
+  dot.className = 'conn-dot connecting';
+  label.textContent = 'connecting...';
+
+  _sse = new EventSource('/events');
+
+  _sse.addEventListener('snapshot', e => {
+    applySnapshot(JSON.parse(e.data));
+    dot.className = 'conn-dot live';
+    label.textContent = 'live';
+  });
+
+  _sse.addEventListener('kill_switch', e => {
+    _snap.kill_switch = JSON.parse(e.data);
+    applySnapshot(_snap);
+  });
+
+  _sse.addEventListener('pipeline_status', e => {
+    const ps = JSON.parse(e.data);
+    const bar = document.getElementById('pipeline-status-bar');
+    const txt = document.getElementById('pipeline-status-text');
+    bar.style.display = 'flex';
+    if (ps.status === 'running') {
+      bar.className = 'running';
+      txt.textContent = '▶ Pipeline running...';
+    } else if (ps.status === 'complete') {
+      bar.className = 'complete';
+      const r = ps.result || {};
+      txt.textContent = '✓ ' + (r.summary || JSON.stringify(r));
+      setTimeout(() => { bar.style.display = 'none'; }, 8000);
+    } else if (ps.status === 'error') {
+      bar.className = 'error';
+      txt.textContent = '✗ ' + ((ps.result || {}).error || 'pipeline error');
+    }
+  });
+
+  _sse.onerror = () => {
+    dot.className = 'conn-dot dead';
+    label.textContent = 'disconnected — reconnecting';
+    _sse.close();
+    setTimeout(connectSSE, 3000);
+  };
+}
+
+connectSSE();
+</script>
+</body>
+</html>
