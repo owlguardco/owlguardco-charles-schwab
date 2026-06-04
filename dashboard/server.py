@@ -71,6 +71,13 @@ def _poll_loop():
         time.sleep(10)
 
 
+# Init DB schema on startup (no-op if DATABASE_URL not set)
+try:
+    from dashboard.db import init_schema
+    init_schema()
+except Exception as _e:
+    logger.warning(f"DB init skipped: {_e}")
+
 threading.Thread(target=_poll_loop, daemon=True).start()
 
 # ── Pipeline run state ──────────────────────────────────────────────────────

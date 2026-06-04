@@ -1,5 +1,6 @@
 """Tests for dashboard state reader — no network calls."""
 import json
+import os
 import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
@@ -96,3 +97,31 @@ def test_flask_kill_switch_toggle():
             assert resp.status_code == 200
             data = resp.get_json()
             assert data["active"] is True
+
+
+def test_db_not_configured_when_no_url():
+    from dashboard.db import is_configured
+    with patch.dict("os.environ", {}, clear=True):
+        env = {k: v for k, v in os.environ.items() if k != "DATABASE_URL"}
+        with patch.dict("os.environ", env, clear=True):
+            assert is_configured() is False
+
+
+def test_db_get_kill_switch_returns_none_when_not_configured():
+    from dashboard.db import db_get_kill_switch
+    with patch.dict("os.environ", {k: v for k, v in os.environ.items() if k != "DATABASE_URL"}, clear=True):
+        result = db_get_kill_switch()
+        assert result is None
+
+
+def test_state_falls_back_to_file_when_no_db():
+    import tempfile, os
+    from dashboard.state import get_kill_switch
+    with tempfile.TemporaryDirectory() as tmpdir:
+        ks_path = Path(tmpdir) / "ks.json"
+        ks_path.write_text('{"active": false, "reason": "", "updated_at": ""}')
+        env = {k: v for k, v in os.environ.items() if k != "DATABASE_URL"}
+        with patch.dict("os.environ", env, clear=True), \
+             patch("dashboard.state.KILL_SWITCH_PATH", ks_path):
+            result = get_kill_switch()
+    assert result["active"] is False

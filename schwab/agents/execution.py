@@ -29,6 +29,7 @@ _SIDE = {"LONG": "BUY", "SHORT": "SELL"}
 
 class ExecutionAgent:
     def _journal(self, row: dict) -> None:
+        # Always write CSV (local record)
         TRADE_LOG.parent.mkdir(parents=True, exist_ok=True)
         new = not TRADE_LOG.exists()
         with TRADE_LOG.open("a", newline="") as f:
@@ -36,6 +37,13 @@ class ExecutionAgent:
             if new:
                 w.writeheader()
             w.writerow({k: row.get(k, "") for k in _FIELDS})
+        # Also write to Postgres if configured
+        try:
+            from dashboard.db import db_insert_trade, is_configured
+            if is_configured():
+                db_insert_trade(row)
+        except Exception as e:
+            logger.warning(f"db_insert_trade failed (CSV written): {e}")
 
     def run(
         self,

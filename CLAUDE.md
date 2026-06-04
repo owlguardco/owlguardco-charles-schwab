@@ -141,6 +141,42 @@ Pipeline runs fire in a background thread and push status via SSE.
 Refreshes live data every 10 seconds via SSE broadcast from poll loop.
 UW flow and Schwab account populate automatically when keys are configured.
 
+## Railway Deploy
+
+Project: owlguardco-charles-schwab
+Service: web (gunicorn, 1 worker 4 threads)
+Database: Railway Postgres (DATABASE_URL injected automatically)
+
+Deploy:
+  cd ~/owlguardco-charles-schwab
+  railway link  # select owlguardco-charles-schwab project
+  railway up --service web
+
+Env vars to set in Railway dashboard (Settings → Variables):
+  ANTHROPIC_API_KEY
+  SCHWAB_APP_KEY
+  SCHWAB_APP_SECRET
+  SCHWAB_ACCESS_TOKEN
+  SCHWAB_REFRESH_TOKEN
+  SCHWAB_ACCOUNT_HASH
+  SCHWAB_CALLBACK_URL
+  UW_API_KEY
+  MANDATE_SYMBOL_ALLOWLIST
+  MANDATE_MAX_POSITION_USD
+  MANDATE_DAILY_LOSS_LIMIT_USD
+  DISCORD_WEBHOOK_URL
+
+Do NOT set on Railway (localhost-only):
+  FINCEPT_MCP_ENDPOINT  — Fincept runs on local Mac only
+  FINCEPT_MCP_TOKEN
+
+DATABASE_URL is injected by Railway automatically — do not set manually.
+
+Storage:
+  Kill switch → Postgres (Railway) + local JSON file (local dev)
+  Trade log   → Postgres (Railway) + local CSV file (always written)
+  Both fall back to local files when DATABASE_URL is not set.
+
 ## Critical data boundary
 
 No employer / Wolters Kluwer / work data EVER enters this system. It uses only

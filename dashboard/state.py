@@ -1,7 +1,9 @@
 """
 Live state reader for the dashboard.
-Reads from: kill_switch_state.json, trade_log.csv, .env (mandate),
-and optionally live Schwab/UW/Fincept clients.
+
+Storage priority:
+  1. Postgres (DATABASE_URL set) — used on Railway
+  2. Local files — used in local dev without DB
 
 All methods return plain dicts/lists — JSON-serializable, no exceptions raised.
 """
@@ -13,7 +15,7 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from dotenv import load_dotenv, dotenv_values
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -26,6 +28,11 @@ TRADE_LOG_PATH = DATA_DIR / "trade_log.csv"
 # ── Kill switch ────────────────────────────────────────────────────────────
 
 def get_kill_switch() -> dict:
+    from dashboard.db import db_get_kill_switch
+    db = db_get_kill_switch()
+    if db is not None:
+        return db
+    # Local file fallback
     try:
         state = json.loads(KILL_SWITCH_PATH.read_text())
         return {
@@ -40,7 +47,12 @@ def get_kill_switch() -> dict:
 
 
 def set_kill_switch(active: bool, reason: str = "") -> dict:
-    """Write kill switch state. Returns new state dict."""
+    from dashboard.db import db_set_kill_switch, is_configured
+    if is_configured():
+        result = db_set_kill_switch(active, reason)
+        if result:
+            return result
+    # Local file fallback
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     payload = {
         "active": active,
@@ -56,6 +68,11 @@ def set_kill_switch(active: bool, reason: str = "") -> dict:
 # ── Trade log ──────────────────────────────────────────────────────────────
 
 def get_trade_log(limit: int = 50) -> list[dict]:
+    from dashboard.db import db_get_trades
+    db = db_get_trades(limit)
+    if db is not None:
+        return db
+    # Local file fallback
     if not TRADE_LOG_PATH.exists():
         return []
     try:
@@ -67,19 +84,12 @@ def get_trade_log(limit: int = 50) -> list[dict]:
 
 
 def get_pnl_today() -> dict:
-    """
-    Estimate today's P&L from trade log.
-    Submitted orders with a price are counted as realized.
-    Returns {total_pnl, trade_count, win_count}.
-    """
     today = datetime.now(timezone.utc).date().isoformat()
     trades = [
         t for t in get_trade_log(200)
         if t.get("result") == "submitted"
-        and t.get("timestamp", "")[:10] == today
+        and str(t.get("timestamp", ""))[:10] == today
     ]
-    # We don't have exit prices in the log (market orders, intraday)
-    # so P&L is approximated as 0 until exit prices are tracked.
     return {
         "total_pnl": 0.0,
         "trade_count": len(trades),
@@ -110,10 +120,7 @@ def get_mandate() -> dict:
 # ── Module connectivity status ──────────────────────────────────────────────
 
 def get_module_status() -> dict:
-    """
-    Check which integrations are configured (not live-ping — fast check only).
-    Returns dict of {module: status} where status is 'ready'|'missing'|'configured'.
-    """
+    from dashboard.db import is_configured as db_configured
     schwab_authed = bool(
         os.environ.get("SCHWAB_ACCESS_TOKEN")
         and os.environ.get("SCHWAB_ACCOUNT_HASH")
@@ -124,24 +131,20 @@ def get_module_status() -> dict:
     )
     uw_configured = bool(os.environ.get("UW_API_KEY"))
     anthropic_configured = bool(os.environ.get("ANTHROPIC_API_KEY"))
-
     return {
         "schwab": "ready" if schwab_authed else "missing",
         "fincept": "ready" if fincept_configured else "missing",
         "unusual_whales": "ready" if uw_configured else "missing",
         "anthropic": "ready" if anthropic_configured else "missing",
-        "screener": "ready",   # no key needed
-        "backtest": "ready",   # no key needed
+        "screener": "ready",
+        "backtest": "ready",
+        "database": "ready" if db_configured() else "missing",
     }
 
 
-# ── Live Schwab account (optional — only if authed) ─────────────────────────
+# ── Live Schwab account ─────────────────────────────────────────────────────
 
 def get_account_summary() -> dict:
-    """
-    Try to fetch live account value + positions from Schwab.
-    Returns empty dict on any failure — dashboard degrades gracefully.
-    """
     account_hash = os.environ.get("SCHWAB_ACCOUNT_HASH", "")
     if not account_hash or not os.environ.get("SCHWAB_ACCESS_TOKEN"):
         return {}
@@ -152,25 +155,18 @@ def get_account_summary() -> dict:
         client = AccountsClient(auth)
         value = client.get_account_value(account_hash)
         positions = client.get_positions(account_hash)
-        return {
-            "account_value": value,
-            "positions": positions,
-        }
+        return {"account_value": value, "positions": positions}
     except Exception as e:
         return {"error": str(e)}
 
 
-# ── Unusual Whales snapshot (optional) ──────────────────────────────────────
+# ── Unusual Whales snapshot ─────────────────────────────────────────────────
 
 def get_uw_snapshot() -> dict:
-    """
-    Fetch market tide + top OI change from UW.
-    Returns empty dict if UW_API_KEY not set or call fails.
-    """
     if not os.environ.get("UW_API_KEY"):
         return {}
     try:
-        from schwab.unusual_whales.client import UnusualWhalesClient, UnusualWhalesError
+        from schwab.unusual_whales.client import UnusualWhalesClient
         client = UnusualWhalesClient()
         tide = client.market_tide()
         oi = client.oi_change(limit=10)
@@ -180,10 +176,9 @@ def get_uw_snapshot() -> dict:
         return {"error": str(e)}
 
 
-# ── Full dashboard snapshot ──────────────────────────────────────────────────
+# ── Full snapshot ──────────────────────────────────────────────────────────
 
 def get_full_snapshot() -> dict:
-    """Single call that assembles everything the dashboard needs."""
     return {
         "kill_switch": get_kill_switch(),
         "mandate": get_mandate(),
