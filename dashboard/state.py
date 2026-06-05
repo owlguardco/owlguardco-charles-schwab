@@ -176,6 +176,42 @@ def get_uw_snapshot() -> dict:
         return {"error": str(e)}
 
 
+# ── Fincept snapshot ─────────────────────────────────────────────────────────
+
+def get_fincept_snapshot() -> dict:
+    """
+    Fetch live data from Fincept MCP bridge.
+    Returns empty dict if not configured or unreachable.
+    """
+    if not os.environ.get("FINCEPT_MCP_ENDPOINT"):
+        return {}
+    try:
+        from schwab.fincept.config import FinceptConfig
+        from schwab.fincept.client import FinceptMCPClient, FinceptMCPError
+        from schwab.fincept.macro_context import get_macro_context
+        cfg = FinceptConfig.from_env()
+        client = FinceptMCPClient(cfg)
+        if not client.ping():
+            return {"error": "bridge unreachable"}
+        result = {}
+        try:
+            result["market_tide"] = client.datahub_peek("market:tide")
+        except FinceptMCPError:
+            pass
+        try:
+            result["threat_alerts"] = client.get_threat_alerts(limit=3)
+        except FinceptMCPError:
+            pass
+        try:
+            result["geopolitics"] = client.fetch_geopolitics_events(limit=3)
+        except FinceptMCPError:
+            pass
+        result["connected"] = True
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # ── Full snapshot ──────────────────────────────────────────────────────────
 
 def get_full_snapshot() -> dict:
@@ -187,5 +223,6 @@ def get_full_snapshot() -> dict:
         "pnl_today": get_pnl_today(),
         "account": get_account_summary(),
         "uw": get_uw_snapshot(),
+        "fincept": get_fincept_snapshot(),
         "server_time": datetime.now(timezone.utc).isoformat(),
     }

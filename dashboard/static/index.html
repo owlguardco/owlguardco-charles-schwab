@@ -5,119 +5,131 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OwlGuardCo — Schwab Trading</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0a0a;
-    --bg1: #111111;
-    --bg2: #1a1a1a;
-    --bg3: #222222;
-    --border: rgba(255,255,255,0.08);
-    --border2: rgba(255,255,255,0.14);
-    --text: #e8e8e8;
-    --text2: #888;
-    --text3: #555;
-    --green: #4ade80;
-    --green-dim: rgba(74,222,128,0.12);
-    --red: #f87171;
-    --red-dim: rgba(248,113,113,0.12);
-    --amber: #fbbf24;
-    --amber-dim: rgba(251,191,36,0.12);
-    --blue: #60a5fa;
-    --blue-dim: rgba(96,165,250,0.10);
+    --bg: #f5f5f2;
+    --bg1: #ffffff;
+    --bg2: #f0ede8;
+    --bg3: #e8e4de;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.14);
+    --text: #1a1a18;
+    --text2: #5a5a55;
+    --text3: #9a9a94;
+    --green: #2d7a2d;
+    --green-dim: rgba(45,122,45,0.10);
+    --green-bg: #e8f4e8;
+    --red: #c0392b;
+    --red-dim: rgba(192,57,43,0.10);
+    --red-bg: #faeaea;
+    --amber: #b7590a;
+    --amber-dim: rgba(183,89,10,0.10);
+    --amber-bg: #fdf0e0;
+    --blue: #1a5fa8;
+    --blue-dim: rgba(26,95,168,0.10);
     --mono: 'IBM Plex Mono', monospace;
     --sans: 'IBM Plex Sans', sans-serif;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.10);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 13px; min-height: 100vh; }
+  html, body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; min-height: 100vh; }
 
-  .topbar { display: flex; align-items: center; gap: 16px; padding: 12px 20px; border-bottom: 0.5px solid var(--border); background: var(--bg1); }
-  .topbar-logo { font-size: 12px; font-weight: 500; letter-spacing: 0.1em; color: var(--text2); text-transform: uppercase; }
-  .topbar-title { font-size: 13px; color: var(--text); }
-  .topbar-time { margin-left: auto; font-size: 11px; color: var(--text3); }
-  .ks-pill { padding: 3px 10px; border-radius: 3px; font-size: 11px; font-weight: 500; letter-spacing: 0.05em; cursor: pointer; border: none; font-family: var(--mono); }
-  .ks-inactive { background: var(--green-dim); color: var(--green); }
-  .ks-active { background: var(--red-dim); color: var(--red); animation: pulse 1.5s ease-in-out infinite; }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 10px 20px; border-bottom: 1px solid var(--border); background: var(--bg1); box-shadow: var(--shadow); }
+  .topbar-logo { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase; }
+  .topbar-sep { color: var(--border2); }
+  .topbar-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .topbar-time { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--text3); }
+  .ks-pill { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; border: 1.5px solid; font-family: var(--mono); }
+  .ks-inactive { background: var(--green-bg); color: var(--green); border-color: rgba(45,122,45,0.3); }
+  .ks-active { background: var(--red-bg); color: var(--red); border-color: rgba(192,57,43,0.3); animation: pulse 1.5s ease-in-out infinite; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
-  .conn-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-  .conn-dot.live { background: var(--green); box-shadow: 0 0 4px var(--green); }
+  .conn-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .conn-dot.live { background: var(--green); }
   .conn-dot.dead { background: var(--red); }
   .conn-dot.connecting { background: var(--amber); animation: pulse 1s infinite; }
 
-  .layout { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 41px); }
+  .layout { display: grid; grid-template-columns: 210px 1fr; min-height: calc(100vh - 42px); }
 
-  .sidebar { border-right: 0.5px solid var(--border); background: var(--bg1); padding: 16px 12px; display: flex; flex-direction: column; gap: 20px; }
-  .sidebar-section { display: flex; flex-direction: column; gap: 6px; }
-  .sidebar-label { font-size: 10px; letter-spacing: 0.12em; color: var(--text3); text-transform: uppercase; padding: 0 4px; margin-bottom: 2px; }
-  .sidebar-btn { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 4px; font-size: 12px; color: var(--text2); background: transparent; border: none; cursor: pointer; font-family: var(--mono); text-align: left; transition: background 0.12s, color 0.12s; width: 100%; }
-  .sidebar-btn:hover { background: var(--bg3); color: var(--text); }
+  .sidebar { border-right: 1px solid var(--border); background: var(--bg1); padding: 16px 10px; display: flex; flex-direction: column; gap: 20px; }
+  .sidebar-section { display: flex; flex-direction: column; gap: 4px; }
+  .sidebar-label { font-size: 10px; letter-spacing: 0.12em; color: var(--text3); text-transform: uppercase; padding: 0 8px; margin-bottom: 4px; font-weight: 600; }
+  .sidebar-btn { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 6px; font-size: 12px; color: var(--text2); background: transparent; border: none; cursor: pointer; font-family: var(--sans); text-align: left; transition: background 0.12s, color 0.12s; width: 100%; font-weight: 500; }
+  .sidebar-btn:hover { background: var(--bg2); color: var(--text); }
   .sidebar-btn.danger { color: var(--red); }
-  .sidebar-btn.danger:hover { background: var(--red-dim); }
-  .sidebar-btn .icon { font-size: 14px; opacity: 0.7; }
-
-  .module-row { display: flex; align-items: center; gap: 7px; padding: 5px 4px; font-size: 11px; color: var(--text2); }
+  .sidebar-btn.danger:hover { background: var(--red-bg); }
+  .module-row { display: flex; align-items: center; gap: 8px; padding: 5px 8px; font-size: 11px; color: var(--text2); }
   .module-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
   .module-dot.ready { background: var(--green); }
   .module-dot.missing { background: var(--text3); }
 
-  .main { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+  .main { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; background: var(--bg); }
 
   .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .metric { background: var(--bg1); border: 0.5px solid var(--border); border-radius: 6px; padding: 12px 14px; }
-  .metric-label { font-size: 10px; letter-spacing: 0.08em; color: var(--text3); text-transform: uppercase; margin-bottom: 5px; }
-  .metric-value { font-size: 20px; font-weight: 500; color: var(--text); line-height: 1.1; }
-  .metric-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .metric { background: var(--bg1); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .metric-label { font-size: 10px; letter-spacing: 0.08em; color: var(--text3); text-transform: uppercase; margin-bottom: 6px; font-weight: 600; }
+  .metric-value { font-size: 22px; font-weight: 600; color: var(--text); line-height: 1.1; font-family: var(--mono); }
+  .metric-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
 
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .row2-3 { display: grid; grid-template-columns: 2fr 3fr; gap: 14px; }
 
-  .panel { background: var(--bg1); border: 0.5px solid var(--border); border-radius: 6px; overflow: hidden; }
-  .panel-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 0.5px solid var(--border); font-size: 10px; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase; }
-  .panel-head .badge { margin-left: auto; background: var(--bg3); color: var(--text3); font-size: 10px; padding: 1px 6px; border-radius: 3px; }
-  .panel-body { padding: 12px 14px; }
+  .panel { background: var(--bg1); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; box-shadow: var(--shadow); }
+  .panel-head { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 10px; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase; font-weight: 600; background: var(--bg2); }
+  .panel-head .badge { margin-left: auto; background: var(--bg3); color: var(--text2); font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+  .panel-body { padding: 14px 16px; }
 
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  th { font-size: 10px; letter-spacing: 0.06em; color: var(--text3); text-transform: uppercase; text-align: left; padding: 0 0 8px; border-bottom: 0.5px solid var(--border); font-weight: 400; }
-  td { padding: 7px 0; border-bottom: 0.5px solid var(--border); color: var(--text); vertical-align: middle; }
+  th { font-size: 10px; letter-spacing: 0.06em; color: var(--text3); text-transform: uppercase; text-align: left; padding: 0 0 8px; border-bottom: 1px solid var(--border); font-weight: 600; }
+  td { padding: 8px 0; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
   td.right { text-align: right; }
   td.muted { color: var(--text2); font-size: 11px; }
-  .sym { font-weight: 500; }
-  .pos { color: var(--green); }
-  .neg { color: var(--red); }
-  .tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 500; }
-  .tag-green { background: var(--green-dim); color: var(--green); }
-  .tag-red { background: var(--red-dim); color: var(--red); }
-  .tag-amber { background: var(--amber-dim); color: var(--amber); }
+  td.mono { font-family: var(--mono); }
+  .sym { font-weight: 600; font-size: 13px; }
+  .pos { color: var(--green); font-weight: 500; }
+  .neg { color: var(--red); font-weight: 500; }
+
+  .tag { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+  .tag-green { background: var(--green-bg); color: var(--green); }
+  .tag-red { background: var(--red-bg); color: var(--red); }
+  .tag-amber { background: var(--amber-bg); color: var(--amber); }
   .tag-blue { background: var(--blue-dim); color: var(--blue); }
   .tag-gray { background: var(--bg3); color: var(--text2); }
 
-  .empty-state { color: var(--text3); font-size: 12px; padding: 20px 0; text-align: center; }
+  .empty-state { color: var(--text3); font-size: 12px; padding: 24px 0; text-align: center; }
 
-  .flow-bar-wrap { height: 3px; background: var(--bg3); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+  .flow-bar-wrap { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; margin-top: 6px; }
   .flow-bar { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
 
-  #pipeline-status-bar { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text2); padding: 8px 14px; border-bottom: 0.5px solid var(--border); }
-  #pipeline-status-bar.running { color: var(--amber); background: var(--amber-dim); }
-  #pipeline-status-bar.error { color: var(--red); background: var(--red-dim); }
-  #pipeline-status-bar.complete { color: var(--green); }
+  #pipeline-status-bar { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text2); padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg1); }
+  #pipeline-status-bar.running { color: var(--amber); background: var(--amber-bg); border-color: rgba(183,89,10,0.2); }
+  #pipeline-status-bar.error { color: var(--red); background: var(--red-bg); border-color: rgba(192,57,43,0.2); }
+  #pipeline-status-bar.complete { color: var(--green); background: var(--green-bg); border-color: rgba(45,122,45,0.2); }
 
-  .scan-input { display: flex; gap: 8px; margin-bottom: 10px; }
-  .scan-input input { flex: 1; background: var(--bg2); border: 0.5px solid var(--border2); border-radius: 4px; color: var(--text); font-family: var(--mono); font-size: 12px; padding: 6px 10px; outline: none; }
-  .scan-input input:focus { border-color: var(--blue); }
-  .scan-input button { background: var(--bg3); border: 0.5px solid var(--border2); border-radius: 4px; color: var(--text2); font-family: var(--mono); font-size: 12px; padding: 6px 12px; cursor: pointer; }
-  .scan-input button:hover { color: var(--text); background: var(--bg2); }
-  .scan-input button.primary { color: var(--green); border-color: rgba(74,222,128,0.3); }
-  .scan-input button.primary:hover { background: var(--green-dim); }
+  .scan-input { display: flex; gap: 8px; margin-bottom: 12px; }
+  .scan-input input { flex: 1; background: var(--bg2); border: 1px solid var(--border2); border-radius: 6px; color: var(--text); font-family: var(--mono); font-size: 12px; padding: 7px 10px; outline: none; }
+  .scan-input input:focus { border-color: var(--blue); background: var(--bg1); }
+  .scan-input input::placeholder { color: var(--text3); }
+  .scan-input button { background: var(--blue); border: none; border-radius: 6px; color: white; font-family: var(--sans); font-size: 12px; font-weight: 600; padding: 7px 14px; cursor: pointer; }
+  .scan-input button:hover { opacity: 0.88; }
+
+  .fincept-status { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 10px; padding: 8px 10px; background: var(--bg2); border-radius: 6px; }
+  .fincept-event { padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .fincept-event:last-child { border-bottom: none; }
+  .fincept-event-title { font-weight: 500; color: var(--text); }
+  .fincept-event-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
 </style>
 </head>
 <body>
 
 <div class="topbar">
   <span class="topbar-logo">OwlGuardCo</span>
-  <span style="color:var(--border2)">›</span>
+  <span class="topbar-sep">›</span>
   <span class="topbar-title">Schwab Trading Dashboard</span>
-  <div style="display:flex;align-items:center;gap:6px;margin-left:16px;">
+  <div style="display:flex;align-items:center;gap:6px;margin-left:12px;">
     <div class="conn-dot connecting" id="conn-dot"></div>
     <span style="font-size:11px;color:var(--text3);" id="conn-label">connecting...</span>
   </div>
@@ -131,8 +143,8 @@
       <div class="sidebar-label">Pipeline</div>
       <button class="sidebar-btn" onclick="runPipeline('scan')">▶ Scan + run</button>
       <button class="sidebar-btn" onclick="runPipeline('manual')">▶ Manual symbols</button>
-      <button class="sidebar-btn" onclick="refreshFlow()">⟳ Refresh UW flow</button>
-      <button class="sidebar-btn" onclick="refreshSnapshot()">⟳ Refresh all</button>
+      <button class="sidebar-btn" onclick="refreshFlow()">↻ Refresh UW flow</button>
+      <button class="sidebar-btn" onclick="refreshSnapshot()">↻ Refresh all</button>
     </div>
     <div class="sidebar-section">
       <div class="sidebar-label">Safety</div>
@@ -165,7 +177,7 @@
       <div class="metric">
         <div class="metric-label">Trades today</div>
         <div class="metric-value" id="metric-trades">0</div>
-        <div class="metric-sub" id="metric-trades-sub">0 submitted</div>
+        <div class="metric-sub" id="metric-trades-sub">0 submitted today</div>
       </div>
       <div class="metric">
         <div class="metric-label">Max position</div>
@@ -180,7 +192,7 @@
         <div class="panel-body">
           <div class="scan-input">
             <input type="text" id="symbol-input" placeholder="AAPL TSLA NVDA..." />
-            <button onclick="runManualScan()" class="primary">▶ Run</button>
+            <button onclick="runManualScan()">▶ Run</button>
           </div>
           <table>
             <thead><tr><th>Symbol</th><th>Allowlisted</th><th>Action</th></tr></thead>
@@ -209,12 +221,15 @@
 
     <div class="row2">
       <div class="panel">
-        <div class="panel-head">Open positions <span class="badge" id="pos-badge">0</span></div>
-        <div class="panel-body">
-          <table>
-            <thead><tr><th>Symbol</th><th>Qty</th><th>Avg cost</th><th class="right">Mkt value</th></tr></thead>
-            <tbody id="positions-body"><tr><td colspan="4" class="empty-state">Schwab auth required</td></tr></tbody>
-          </table>
+        <div class="panel-head">Fincept Terminal <span class="badge" id="fincept-badge">MCP</span></div>
+        <div class="panel-body" id="fincept-body">
+          <div class="fincept-status">
+            <div class="module-dot missing" id="fincept-dot"></div>
+            <span id="fincept-status-text">Not configured — run fincept_discover.py</span>
+          </div>
+          <div id="fincept-content">
+            <div class="empty-state">Connect Fincept MCP bridge for live data</div>
+          </div>
         </div>
       </div>
 
@@ -226,13 +241,25 @@
       </div>
     </div>
 
-    <div class="panel">
-      <div class="panel-head">Trade log <span class="badge" id="log-badge">0 trades</span></div>
-      <div class="panel-body">
-        <table>
-          <thead><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Cost</th><th>Conf</th><th class="right">Result</th></tr></thead>
-          <tbody id="log-body"><tr><td colspan="8" class="empty-state">No trades logged today</td></tr></tbody>
-        </table>
+    <div class="row2">
+      <div class="panel">
+        <div class="panel-head">Open positions <span class="badge" id="pos-badge">0</span></div>
+        <div class="panel-body">
+          <table>
+            <thead><tr><th>Symbol</th><th>Qty</th><th>Avg cost</th><th class="right">Mkt value</th></tr></thead>
+            <tbody id="positions-body"><tr><td colspan="4" class="empty-state">Schwab auth required</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">Trade log <span class="badge" id="log-badge">0 trades</span></div>
+        <div class="panel-body">
+          <table>
+            <thead><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th class="right">Result</th></tr></thead>
+            <tbody id="log-body"><tr><td colspan="6" class="empty-state">No trades logged today</td></tr></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -242,16 +269,16 @@
 let _snap = {};
 let _sse = null;
 
-function fmt(v, prefix='$') {
+function fmt(v) {
   if (v == null || v === '' || v === undefined) return '—';
   const n = parseFloat(v);
   if (isNaN(n)) return v;
-  return prefix + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 function fmtTime(iso) {
   if (!iso) return '—';
   try { return new Date(iso).toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
-  catch { return iso.slice(11,19); }
+  catch { return String(iso).slice(11,19); }
 }
 
 function applySnapshot(snap) {
@@ -261,8 +288,8 @@ function applySnapshot(snap) {
   const pnl = snap.pnl_today || {};
   const account = snap.account || {};
   const uw = snap.uw || {};
+  const fincept = snap.fincept || {};
 
-  // Topbar time
   if (snap.server_time) {
     document.getElementById('server-time').textContent = fmtTime(snap.server_time) + ' UTC';
   }
@@ -278,18 +305,15 @@ function applySnapshot(snap) {
   document.getElementById('metric-ks-sub').textContent = ks.reason || (ksActive ? 'Trading halted' : 'Safe to trade');
   const metricKs = document.getElementById('metric-ks');
   metricKs.style.borderLeftColor = ksActive ? 'var(--red)' : 'var(--green)';
-  metricKs.style.borderLeftWidth = '2px';
+  metricKs.style.borderLeftWidth = '3px';
 
   // Account
   if (account.account_value != null) {
     document.getElementById('metric-acct').textContent = fmt(account.account_value);
     document.getElementById('metric-acct-sub').textContent = (account.positions || []).length + ' positions';
-  } else if (account.error) {
-    document.getElementById('metric-acct').textContent = '—';
-    document.getElementById('metric-acct-sub').textContent = 'auth error';
   }
 
-  // Trades today
+  // Trades
   document.getElementById('metric-trades').textContent = pnl.trade_count || 0;
   document.getElementById('metric-trades-sub').textContent = (pnl.trade_count || 0) + ' submitted today';
 
@@ -297,7 +321,7 @@ function applySnapshot(snap) {
   document.getElementById('metric-mandate').textContent = mandate.max_position_usd ? '$' + mandate.max_position_usd.toLocaleString() : '—';
   document.getElementById('metric-mandate-sub').textContent = mandate.daily_loss_limit_usd ? 'Daily loss limit $' + mandate.daily_loss_limit_usd.toLocaleString() : 'not configured';
 
-  // Module status
+  // Modules
   renderModuleStatus(snap.module_status || {});
 
   // Positions
@@ -306,15 +330,18 @@ function applySnapshot(snap) {
   // Trade log
   renderTradeLog(snap.trade_log || []);
 
-  // UW data
+  // UW
   if (uw.market_tide) renderTide(uw.market_tide);
   if (uw.flow_alerts) renderFlow(uw.flow_alerts);
   if (uw.oi_change) renderOI(uw.oi_change);
+
+  // Fincept
+  renderFincept(fincept);
 }
 
 function renderModuleStatus(status) {
   const el = document.getElementById('module-status-list');
-  const labels = {schwab:'Schwab API', fincept:'Fincept MCP', unusual_whales:'Unusual Whales', anthropic:'Anthropic', screener:'Screener', backtest:'Backtest'};
+  const labels = {schwab:'Schwab API', fincept:'Fincept MCP', unusual_whales:'Unusual Whales', anthropic:'Anthropic', screener:'Screener', backtest:'Backtest', database:'Database'};
   el.innerHTML = Object.entries(labels).map(([k,label]) => {
     const s = status[k] || 'missing';
     const cls = s === 'ready' ? 'ready' : 'missing';
@@ -335,12 +362,7 @@ function renderPositions(positions) {
     const qty = p.longQuantity || p.shortQuantity || 0;
     const avg = p.averagePrice || p.averageLongPrice || 0;
     const mkt = p.marketValue || 0;
-    return `<tr>
-      <td class="sym">${sym}</td>
-      <td>${qty}</td>
-      <td class="muted">${fmt(avg)}</td>
-      <td class="right">${fmt(mkt)}</td>
-    </tr>`;
+    return `<tr><td class="sym">${sym}</td><td class="mono">${qty}</td><td class="muted mono">${fmt(avg)}</td><td class="right mono">${fmt(mkt)}</td></tr>`;
   }).join('');
 }
 
@@ -348,20 +370,18 @@ function renderTradeLog(trades) {
   const tbody = document.getElementById('log-body');
   document.getElementById('log-badge').textContent = trades.length + ' trades';
   if (!trades.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No trades logged</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No trades logged</td></tr>';
     return;
   }
-  tbody.innerHTML = trades.slice(0, 20).map(t => {
+  tbody.innerHTML = trades.slice(0,20).map(t => {
     const res = t.result || '';
     const cls = res === 'submitted' ? 'tag-green' : res === 'blocked' ? 'tag-amber' : 'tag-red';
     return `<tr>
-      <td class="muted">${fmtTime(t.timestamp)}</td>
-      <td class="sym">${t.symbol || '—'}</td>
-      <td>${t.side || '—'}</td>
-      <td>${t.qty || '—'}</td>
-      <td class="muted">${t.price ? fmt(t.price) : '—'}</td>
-      <td class="muted">${t.estimated_cost ? fmt(t.estimated_cost) : '—'}</td>
-      <td class="muted">${t.confidence || '—'}</td>
+      <td class="muted mono">${fmtTime(t.timestamp)}</td>
+      <td class="sym">${t.symbol||'—'}</td>
+      <td>${t.side||'—'}</td>
+      <td class="mono">${t.qty||'—'}</td>
+      <td class="muted mono">${t.price ? fmt(t.price) : '—'}</td>
       <td class="right"><span class="tag ${cls}">${res}</span></td>
     </tr>`;
   }).join('');
@@ -374,19 +394,18 @@ function renderFlow(alerts) {
     tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No flow alerts</td></tr>';
     return;
   }
-  tbody.innerHTML = alerts.slice(0, 15).map(a => {
-    const bullish = (a.sentiment || '').toLowerCase().includes('bull') || a.put_call === 'CALL';
+  tbody.innerHTML = alerts.slice(0,15).map(a => {
+    const bullish = (a.sentiment||'').toLowerCase().includes('bull') || a.put_call === 'CALL';
     const cls = bullish ? 'tag-green' : 'tag-red';
-    const label = bullish ? 'Bullish' : 'Bearish';
     const prem = a.premium ? '$' + (a.premium/1000).toFixed(0) + 'K' : '—';
     return `<tr>
-      <td class="sym">${a.ticker_symbol || a.ticker || '—'}</td>
+      <td class="sym">${a.ticker_symbol||a.ticker||'—'}</td>
       <td class="muted">${(a.put_call||'?')} ${a.is_sweep ? 'sweep' : 'block'}</td>
-      <td>${prem}</td>
-      <td class="muted">${a.dte != null ? a.dte+'d' : '—'}</td>
-      <td class="muted">${a.strike || '—'}</td>
+      <td class="mono">${prem}</td>
+      <td class="muted mono">${a.dte != null ? a.dte+'d' : '—'}</td>
+      <td class="muted mono">${a.strike||'—'}</td>
       <td class="muted">${a.expiry ? a.expiry.slice(5) : '—'}</td>
-      <td class="right"><span class="tag ${cls}">${label}</span></td>
+      <td class="right"><span class="tag ${cls}">${bullish ? 'Bullish' : 'Bearish'}</span></td>
     </tr>`;
   }).join('');
 }
@@ -399,19 +418,20 @@ function renderTide(tide) {
   const total = Math.abs(call_net) + Math.abs(put_net) || 1;
   const call_pct = Math.round(Math.abs(call_net) / total * 100);
   const put_pct = Math.round(Math.abs(put_net) / total * 100);
-  document.getElementById('tide-badge').textContent = call_net > put_net ? 'BULLISH' : 'BEARISH';
+  const bullish = call_net > Math.abs(put_net);
+  document.getElementById('tide-badge').textContent = bullish ? 'BULLISH' : 'BEARISH';
   el.innerHTML = `
-    <div style="margin-bottom:12px;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-        <span style="color:var(--text2);font-size:11px;">Calls net</span>
-        <span style="color:var(--green);font-size:12px;font-weight:500;">${fmt(call_net)}</span>
+    <div style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+        <span style="color:var(--text2);font-size:12px;">Calls net premium</span>
+        <span style="color:var(--green);font-size:13px;font-weight:600;font-family:var(--mono);">${fmt(call_net)}</span>
       </div>
       <div class="flow-bar-wrap"><div class="flow-bar" style="width:${call_pct}%;background:var(--green);"></div></div>
     </div>
     <div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-        <span style="color:var(--text2);font-size:11px;">Puts net</span>
-        <span style="color:var(--red);font-size:12px;font-weight:500;">${fmt(put_net)}</span>
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+        <span style="color:var(--text2);font-size:12px;">Puts net premium</span>
+        <span style="color:var(--red);font-size:13px;font-weight:600;font-family:var(--mono);">${fmt(put_net)}</span>
       </div>
       <div class="flow-bar-wrap"><div class="flow-bar" style="width:${put_pct}%;background:var(--red);"></div></div>
     </div>`;
@@ -429,6 +449,60 @@ function renderOI(oi) {
     }).join('') + '</div>';
 }
 
+function renderFincept(fincept) {
+  const dot = document.getElementById('fincept-dot');
+  const statusText = document.getElementById('fincept-status-text');
+  const content = document.getElementById('fincept-content');
+  const badge = document.getElementById('fincept-badge');
+
+  if (!fincept || Object.keys(fincept).length === 0) {
+    dot.className = 'module-dot missing';
+    statusText.textContent = 'Not configured — run fincept_discover.py locally';
+    content.innerHTML = '<div class="empty-state">Set FINCEPT_MCP_ENDPOINT and FINCEPT_MCP_TOKEN</div>';
+    return;
+  }
+  if (fincept.error) {
+    dot.className = 'module-dot missing';
+    statusText.textContent = 'Bridge error: ' + fincept.error;
+    content.innerHTML = '<div class="empty-state">Fincept Terminal may not be running</div>';
+    return;
+  }
+  dot.className = 'module-dot ready';
+  statusText.textContent = 'Connected — Fincept MCP bridge live';
+  badge.textContent = 'LIVE';
+
+  let html = '';
+
+  // Threat alerts
+  const alerts = fincept.threat_alerts;
+  if (alerts && alerts.length) {
+    html += `<div style="margin-bottom:10px;"><div style="font-size:10px;letter-spacing:0.08em;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:6px;">Threat Alerts</div>`;
+    alerts.forEach(a => {
+      html += `<div class="fincept-event">
+        <div class="fincept-event-title">${a.title || a.headline || JSON.stringify(a).slice(0,60)}</div>
+        <div class="fincept-event-meta">${a.region || ''} ${a.severity ? '· ' + a.severity : ''}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  // Geopolitics
+  const geo = fincept.geopolitics;
+  if (geo && geo.length) {
+    html += `<div><div style="font-size:10px;letter-spacing:0.08em;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:6px;">Geopolitics</div>`;
+    geo.forEach(g => {
+      html += `<div class="fincept-event">
+        <div class="fincept-event-title">${g.title || g.event || JSON.stringify(g).slice(0,60)}</div>
+        <div class="fincept-event-meta">${g.country || g.region || ''} ${g.date ? '· ' + g.date : ''}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  if (!html) html = '<div class="empty-state">No threat or geopolitics data</div>';
+  content.innerHTML = html;
+}
+
 function renderWatchlist(symbols, allowlist) {
   const tbody = document.getElementById('watchlist-body');
   document.getElementById('watchlist-badge').textContent = symbols.length;
@@ -441,25 +515,23 @@ function renderWatchlist(symbols, allowlist) {
     return `<tr>
       <td class="sym">${sym}</td>
       <td><span class="tag ${ok ? 'tag-green' : 'tag-amber'}">${ok ? 'yes' : 'not in mandate'}</span></td>
-      <td><span style="cursor:pointer;color:var(--blue);font-size:11px;" onclick="runSingleSymbol('${sym}')">▶ run</span></td>
+      <td><span style="cursor:pointer;color:var(--blue);font-size:11px;font-weight:600;" onclick="runSingleSymbol('${sym}')">▶ run</span></td>
     </tr>`;
   }).join('');
 }
 
-// ── Actions ─────────────────────────────────────────────────────────────────
+// ── Actions ──────────────────────────────────────────────────────────────────
 
 async function toggleKillSwitch() {
   const ks = _snap.kill_switch || {};
   const newActive = !ks.active;
-  const reason = newActive ? prompt('Kill switch reason:', 'manual dashboard halt') || 'manual dashboard halt' : '';
+  const reason = newActive ? (prompt('Kill switch reason:', 'manual dashboard halt') || 'manual dashboard halt') : '';
   if (newActive && reason === null) return;
   const res = await fetch('/api/kill-switch', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
+    method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({active: newActive, reason})
   });
-  const data = await res.json();
-  _snap.kill_switch = data;
+  _snap.kill_switch = await res.json();
   applySnapshot(_snap);
 }
 
@@ -480,64 +552,48 @@ async function runManualScan() {
   const raw = document.getElementById('symbol-input').value.trim().toUpperCase();
   if (!raw) return;
   const symbols = raw.split(/[\s,]+/).filter(Boolean);
-  const allowlist = (_snap.mandate || {}).symbol_allowlist || [];
-  renderWatchlist(symbols, allowlist);
+  renderWatchlist(symbols, (_snap.mandate || {}).symbol_allowlist || []);
   await runPipelineSymbols(symbols);
 }
 
-async function runSingleSymbol(sym) {
-  await runPipelineSymbols([sym]);
-}
+async function runSingleSymbol(sym) { await runPipelineSymbols([sym]); }
 
 async function runPipeline(mode) {
-  if (mode === 'manual') {
-    document.getElementById('symbol-input').focus();
-    return;
-  }
+  if (mode === 'manual') { document.getElementById('symbol-input').focus(); return; }
   const allowlist = (_snap.mandate || {}).symbol_allowlist || [];
-  if (!allowlist.length) { alert('MANDATE_SYMBOL_ALLOWLIST not configured in .env'); return; }
+  if (!allowlist.length) { alert('MANDATE_SYMBOL_ALLOWLIST not configured'); return; }
   renderWatchlist(allowlist, allowlist);
   await runPipelineSymbols(allowlist);
 }
 
 async function runPipelineSymbols(symbols) {
-  const ks = (_snap.kill_switch || {});
-  if (ks.active) { alert('Kill switch is active — deactivate before running pipeline'); return; }
+  if ((_snap.kill_switch || {}).active) { alert('Kill switch is active — deactivate first'); return; }
   const bar = document.getElementById('pipeline-status-bar');
-  bar.style.display = 'flex';
-  bar.className = 'running';
+  bar.style.display = 'flex'; bar.className = 'running';
   document.getElementById('pipeline-status-text').textContent = `▶ Running pipeline on ${symbols.join(', ')}...`;
   const res = await fetch('/api/pipeline/run', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
+    method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({symbols})
   });
   const data = await res.json();
-  if (data.error) {
-    bar.className = 'error';
-    document.getElementById('pipeline-status-text').textContent = '✗ ' + data.error;
-  }
+  if (data.error) { bar.className = 'error'; document.getElementById('pipeline-status-text').textContent = '✗ ' + data.error; }
 }
 
-// ── SSE connection ───────────────────────────────────────────────────────────
+// ── SSE ───────────────────────────────────────────────────────────────────────
 
 function connectSSE() {
   const dot = document.getElementById('conn-dot');
   const label = document.getElementById('conn-label');
-  dot.className = 'conn-dot connecting';
-  label.textContent = 'connecting...';
-
+  dot.className = 'conn-dot connecting'; label.textContent = 'connecting...';
   _sse = new EventSource('/events');
 
   _sse.addEventListener('snapshot', e => {
     applySnapshot(JSON.parse(e.data));
-    dot.className = 'conn-dot live';
-    label.textContent = 'live';
+    dot.className = 'conn-dot live'; label.textContent = 'live';
   });
 
   _sse.addEventListener('kill_switch', e => {
-    _snap.kill_switch = JSON.parse(e.data);
-    applySnapshot(_snap);
+    _snap.kill_switch = JSON.parse(e.data); applySnapshot(_snap);
   });
 
   _sse.addEventListener('pipeline_status', e => {
@@ -545,25 +601,20 @@ function connectSSE() {
     const bar = document.getElementById('pipeline-status-bar');
     const txt = document.getElementById('pipeline-status-text');
     bar.style.display = 'flex';
-    if (ps.status === 'running') {
-      bar.className = 'running';
-      txt.textContent = '▶ Pipeline running...';
-    } else if (ps.status === 'complete') {
+    if (ps.status === 'running') { bar.className = 'running'; txt.textContent = '▶ Pipeline running...'; }
+    else if (ps.status === 'complete') {
       bar.className = 'complete';
       const r = ps.result || {};
-      txt.textContent = '✓ ' + (r.summary || JSON.stringify(r));
+      txt.textContent = '✓ ' + (r.summary || 'Pipeline complete');
       setTimeout(() => { bar.style.display = 'none'; }, 8000);
     } else if (ps.status === 'error') {
-      bar.className = 'error';
-      txt.textContent = '✗ ' + ((ps.result || {}).error || 'pipeline error');
+      bar.className = 'error'; txt.textContent = '✗ ' + ((ps.result || {}).error || 'pipeline error');
     }
   });
 
   _sse.onerror = () => {
-    dot.className = 'conn-dot dead';
-    label.textContent = 'disconnected — reconnecting';
-    _sse.close();
-    setTimeout(connectSSE, 3000);
+    dot.className = 'conn-dot dead'; label.textContent = 'disconnected';
+    _sse.close(); setTimeout(connectSSE, 3000);
   };
 }
 
