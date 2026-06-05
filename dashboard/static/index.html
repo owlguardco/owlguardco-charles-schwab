@@ -33,6 +33,30 @@
     --shadow: 0 1px 3px rgba(0,0,0,0.08);
     --shadow-md: 0 2px 8px rgba(0,0,0,0.10);
   }
+  [data-theme="dark"] {
+    --bg: #0a0a0a;
+    --bg1: #111111;
+    --bg2: #1a1a1a;
+    --bg3: #222222;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e8e8e8;
+    --text2: #888;
+    --text3: #555;
+    --green: #4ade80;
+    --green-dim: rgba(74,222,128,0.12);
+    --green-bg: rgba(74,222,128,0.12);
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,0.12);
+    --red-bg: rgba(248,113,113,0.12);
+    --amber: #fbbf24;
+    --amber-dim: rgba(251,191,36,0.12);
+    --amber-bg: rgba(251,191,36,0.12);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96,165,250,0.10);
+    --shadow: 0 1px 3px rgba(0,0,0,0.4);
+    --shadow-md: 0 2px 8px rgba(0,0,0,0.5);
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; min-height: 100vh; }
 
@@ -135,6 +159,17 @@
   </div>
   <button class="ks-pill ks-inactive" id="ks-pill" onclick="toggleKillSwitch()">● SAFE</button>
   <span class="topbar-time" id="server-time">—</span>
+  <button id="theme-toggle" onclick="toggleTheme()" style="
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text2);
+    font-size: 13px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-family: var(--mono);
+    margin-left: 8px;
+  " title="Toggle dark/light mode">☀️</button>
 </div>
 
 <div class="layout">
@@ -617,6 +652,26 @@ function connectSSE() {
     _sse.close(); setTimeout(connectSSE, 3000);
   };
 }
+
+// ── Theme toggle ─────────────────────────────────────────────────────────────
+
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  document.getElementById('theme-toggle').textContent = dark ? '☀️' : '🌙';
+}
+
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const newDark = !isDark;
+  localStorage.setItem('owlguard-theme', newDark ? 'dark' : 'light');
+  applyTheme(newDark);
+}
+
+// Apply saved theme on load (default: light)
+(function() {
+  const saved = localStorage.getItem('owlguard-theme');
+  applyTheme(saved === 'dark');
+})();
 
 connectSSE();
 </script>
