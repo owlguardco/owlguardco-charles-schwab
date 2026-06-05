@@ -145,6 +145,14 @@ def api_uw_flow():
     return jsonify(get_uw_snapshot())
 
 
+@app.route("/api/options/free")
+def api_options_free():
+    from dashboard.state import get_options_snapshot
+    symbols = request.args.get("symbols", "").upper().split(",")
+    symbols = [s.strip() for s in symbols if s.strip()]
+    return jsonify(get_options_snapshot(symbols or None))
+
+
 @app.route("/api/pipeline/run", methods=["POST"])
 def api_pipeline_run():
     if _pipeline_state.get("status") == "running":

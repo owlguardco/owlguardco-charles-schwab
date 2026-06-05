@@ -116,6 +116,21 @@ class ResearchAgent:
             from schwab.unusual_whales.flow_context import get_flow_context
             flow = get_flow_context(self._uw, [symbol])
             ctx["options_flow"] = flow.get(symbol, "")
+
+        # Free options chain (yfinance) — used when UW not configured
+        if not self._uw:
+            try:
+                from schwab.options.chain import get_chain_snapshot
+                options = get_chain_snapshot(symbol)
+                if not options.get("error"):
+                    ctx["options_chain"] = {
+                        "put_call_ratio": options.get("put_call_ratio"),
+                        "unusual_volume": options.get("unusual_volume", [])[:3],
+                        "top_call_oi_strike": options.get("top_call_oi", [{}])[0].get("strike"),
+                        "top_put_oi_strike": options.get("top_put_oi", [{}])[0].get("strike"),
+                    }
+            except Exception as e:
+                logger.warning(f"yfinance options failed for {symbol}: {e}")
         return ctx
 
     def _schwab_quote_fallback(self, symbol: str) -> dict:

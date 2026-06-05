@@ -176,6 +176,27 @@ def get_uw_snapshot() -> dict:
         return {"error": str(e)}
 
 
+# ── Free options snapshot (yfinance) ─────────────────────────────────────────
+
+def get_options_snapshot(symbols: list[str] = None) -> dict:
+    """
+    Free options flow via yfinance — used when UW_API_KEY is not set.
+    Returns empty dict if UW is configured (UW takes priority).
+    """
+    if os.environ.get("UW_API_KEY"):
+        return {}  # UW handles this
+    if not symbols:
+        raw = os.environ.get("MANDATE_SYMBOL_ALLOWLIST", "")
+        symbols = [s.strip().upper() for s in raw.split(",") if s.strip()][:5]
+    if not symbols:
+        return {}
+    try:
+        from schwab.options.chain import get_market_flow_free
+        return get_market_flow_free(symbols)
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # ── Fincept snapshot ─────────────────────────────────────────────────────────
 
 def get_fincept_snapshot() -> dict:
@@ -223,6 +244,7 @@ def get_full_snapshot() -> dict:
         "pnl_today": get_pnl_today(),
         "account": get_account_summary(),
         "uw": get_uw_snapshot(),
+        "options_free": get_options_snapshot(),
         "fincept": get_fincept_snapshot(),
         "server_time": datetime.now(timezone.utc).isoformat(),
     }

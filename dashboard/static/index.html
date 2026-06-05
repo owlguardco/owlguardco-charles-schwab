@@ -370,6 +370,13 @@ function applySnapshot(snap) {
   if (uw.flow_alerts) renderFlow(uw.flow_alerts);
   if (uw.oi_change) renderOI(uw.oi_change);
 
+  // Free options fallback when UW not configured
+  if (!snap.uw || Object.keys(snap.uw).length === 0) {
+    if (snap.options_free && snap.options_free.unusual_volume) {
+      renderFreeOptions(snap.options_free);
+    }
+  }
+
   // Fincept
   renderFincept(fincept);
 }
@@ -430,15 +437,18 @@ function renderFlow(alerts) {
     return;
   }
   tbody.innerHTML = alerts.slice(0,15).map(a => {
-    const bullish = (a.sentiment||'').toLowerCase().includes('bull') || a.put_call === 'CALL';
+    const bullish = (a.sentiment||'').toLowerCase().includes('bull') || a.put_call === 'CALL' || a.type === 'CALL';
     const cls = bullish ? 'tag-green' : 'tag-red';
-    const prem = a.premium ? '$' + (a.premium/1000).toFixed(0) + 'K' : '—';
+    const prem = a.premium ? '$' + (a.premium/1000).toFixed(0) + 'K' : (a.volume ? a.volume.toLocaleString() + ' vol' : '—');
+    const ticker = a.ticker_symbol || a.ticker || a.symbol || '—';
+    const typeLabel = a.put_call || a.type || '?';
+    const subLabel = a.is_sweep ? 'sweep' : (a.ratio ? 'vol/oi ' + a.ratio + 'x' : 'block');
     return `<tr>
-      <td class="sym">${a.ticker_symbol||a.ticker||'—'}</td>
-      <td class="muted">${(a.put_call||'?')} ${a.is_sweep ? 'sweep' : 'block'}</td>
+      <td class="sym">${ticker}</td>
+      <td class="muted">${typeLabel} ${subLabel}</td>
       <td class="mono">${prem}</td>
-      <td class="muted mono">${a.dte != null ? a.dte+'d' : '—'}</td>
-      <td class="muted mono">${a.strike||'—'}</td>
+      <td class="muted mono">${a.dte != null ? a.dte+'d' : (a.expiry ? a.expiry.slice(5) : '—')}</td>
+      <td class="muted mono">${a.strike || '—'}</td>
       <td class="muted">${a.expiry ? a.expiry.slice(5) : '—'}</td>
       <td class="right"><span class="tag ${cls}">${bullish ? 'Bullish' : 'Bearish'}</span></td>
     </tr>`;
@@ -482,6 +492,25 @@ function renderOI(oi) {
       const cls = chg >= 0 ? 'tag-green' : 'tag-red';
       return `<span class="tag ${cls}">${sym} ${chg >= 0 ? '+' : ''}${Math.round(chg)}%</span>`;
     }).join('') + '</div>';
+}
+
+function renderFreeOptions(data) {
+  if (!data || data.error || !data.unusual_volume) return;
+  const unusual = data.unusual_volume || [];
+  if (!unusual.length) return;
+  // Feed into the flow panel as synthetic alerts
+  const alerts = unusual.map(u => ({
+    symbol: u.symbol,
+    type: u.type,
+    volume: u.volume,
+    oi: u.oi,
+    ratio: u.ratio,
+    strike: u.strike,
+    expiry: u.expiry,
+    sentiment: u.type === 'CALL' ? 'bullish' : 'bearish',
+  }));
+  renderFlow(alerts);
+  document.getElementById('flow-badge').textContent = alerts.length + ' unusual (yfinance)';
 }
 
 function renderFincept(fincept) {
